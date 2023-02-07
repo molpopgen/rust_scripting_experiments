@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 struct CoreAPIType {
     value: i32,
 }
@@ -43,6 +45,41 @@ fn api_function_with_callback<C: SquareValue>(api: &CoreAPIType, callback: &C) {
 fn work() {
     let api = CoreAPIType::default();
     api_function_with_callback(&api, &RustCallBack {});
+
+    // Exploratory hacking re: rune
+    let rune_code = r###"
+        pub fn callback_body(value) {
+            value * value
+        }
+    "###;
+
+    // This doesn't seem to be the mechanism
+    // to get a string literal into something
+    // we can call via rust
+    let mut sources = rune::sources! {
+        entry => {
+        pub fn callback_body(value) {
+            value * value
+        }
+        }
+    };
+
+    let context = rune_modules::default_context().unwrap();
+    let result = rune::prepare(&mut sources).with_context(&context).build();
+
+    let unit = result.unwrap();
+
+    let mut vm = rune::Vm::new(Arc::new(context.runtime()), Arc::new(unit));
+    let output = vm
+        .execute(["callback_body"], (api.get_value(),))
+        .unwrap()
+        .complete()
+        .unwrap();
+    let result = match output {
+        rune::Value::Integer(x) => x,
+        _ => panic!("we don't understand this"),
+    };
+    assert_eq!(result as i32, api.get_value() * api.get_value());
 }
 
 fn main() {
