@@ -47,6 +47,8 @@ fn work() {
     api_function_with_callback(&api, &RustCallBack {});
 
     // Exploratory hacking re: rune
+    // The hints here are important:
+    // https://rune-rs.github.io/book/external_types.html
     let rune_code = r###"
         pub fn callback_body(value) {
             value * value
