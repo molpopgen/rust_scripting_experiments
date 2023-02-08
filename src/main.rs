@@ -1,6 +1,5 @@
+use corelib::{CoreAPIType, RuneCoreAPIType, SquareValue};
 use std::sync::Arc;
-use corelib::{CoreAPIType, SquareValue};
-
 
 struct RustCallBack {}
 
@@ -11,21 +10,6 @@ impl SquareValue for RustCallBack {
         (*api).get_value() * (*api).get_value()
     }
 }
-
-// Rune interface
-#[derive(rune::Any)]
-#[repr(transparent)]
-struct RuneCoreAPIType(*const CoreAPIType);
-
-impl RuneCoreAPIType {
-    fn get_value(&self) -> i32 {
-        assert!(!self.0.is_null());
-        // SAFETY: it is not NULL
-        unsafe { (*self.0).get_value() }
-    }
-}
-
-struct RuneCallback {}
 
 fn api_function_with_callback<C: SquareValue>(api: &CoreAPIType, callback: &C) {
     let x = api.get_value();
@@ -70,7 +54,7 @@ fn work() {
     let unit = result.unwrap();
 
     let mut vm = rune::Vm::new(Arc::new(context.runtime()), Arc::new(unit));
-    let wrapper = RuneCoreAPIType(&api as *const CoreAPIType);
+    let wrapper = RuneCoreAPIType::new(&api);
     let output = vm
         .execute(["callback_body"], (wrapper,))
         .unwrap()

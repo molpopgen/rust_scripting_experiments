@@ -22,3 +22,7 @@ pub trait SquareValue {
     /// Client code must ensure that api is not null
     unsafe fn square(&self, api: *const CoreAPIType) -> i32;
 }
+
+mod rune_api;
+
+pub use rune_api::RuneCoreAPIType;
