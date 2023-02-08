@@ -1,11 +1,6 @@
 use std::sync::Arc;
-use corelib::CoreAPIType;
+use corelib::{CoreAPIType, SquareValue};
 
-trait SquareValue {
-    // Function is unsafe because a pointer will have to
-    // be dereferenced.
-    unsafe fn square(&self, api: *const CoreAPIType) -> i32;
-}
 
 struct RustCallBack {}
 

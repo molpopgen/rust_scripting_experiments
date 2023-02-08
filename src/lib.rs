@@ -13,3 +13,12 @@ impl CoreAPIType {
         self.value
     }
 }
+
+pub trait SquareValue {
+    // Function is unsafe because a pointer will have to
+    // be dereferenced.
+    /// # Safety
+    ///
+    /// Client code must ensure that api is not null
+    unsafe fn square(&self, api: *const CoreAPIType) -> i32;
+}
