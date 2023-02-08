@@ -66,7 +66,7 @@ fn work() {
         }
     };
 
-    let context = rune_modules::default_context().unwrap();
+    let context = rune::Context::new();
     let result = rune::prepare(&mut sources).with_context(&context).build();
 
     let unit = result.unwrap();
