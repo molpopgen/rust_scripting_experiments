@@ -59,25 +59,16 @@ fn work() {
     let api = CoreAPIType::default();
     api_function_with_callback(&api, &RustCallBack {});
 
-    // Exploratory hacking re: rune
-    // The hints here are important:
-    // https://rune-rs.github.io/book/external_types.html
+    // Code in string literal
     let rune_code = r###"
-        pub fn callback_body(value) {
-            value * value
+        pub fn callback_body(item) {
+            item.get_value * item.get_value
         }
     "###;
 
-    // This doesn't seem to be the mechanism
-    // to get a string lieral into something
-    // we can call via rust
-    let mut sources = rune::sources! {
-        entry => {
-            pub fn callback_body(item) {
-              item.get_value * item.get_value
-            }
-        }
-    };
+    let mut sources = rune::Sources::new();
+    let source = rune::Source::new("foo", rune_code);
+    sources.insert(source);
 
     let mut context = rune::Context::new();
     let mut m = rune::Module::new();
