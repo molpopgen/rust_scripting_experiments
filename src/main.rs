@@ -91,11 +91,8 @@ fn work() {
         .unwrap()
         .complete()
         .unwrap();
-    let result = match output {
-        rune::Value::Integer(x) => x,
-        _ => panic!("we don't understand this"),
-    };
-    assert_eq!(result as i32, api.get_value() * api.get_value());
+    let result: i32 = rune::FromValue::from_value(output).unwrap();
+    assert_eq!(result, api.get_value() * api.get_value());
 }
 
 fn main() {
