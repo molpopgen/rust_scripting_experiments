@@ -1,20 +1,5 @@
 use std::sync::Arc;
-
-struct CoreAPIType {
-    value: i32,
-}
-
-impl Default for CoreAPIType {
-    fn default() -> Self {
-        Self { value: 6 }
-    }
-}
-
-impl CoreAPIType {
-    fn get_value(&self) -> i32 {
-        self.value
-    }
-}
+use corelib::CoreAPIType;
 
 trait SquareValue {
     // Function is unsafe because a pointer will have to
