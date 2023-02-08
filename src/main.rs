@@ -32,6 +32,19 @@ impl SquareValue for RustCallBack {
     }
 }
 
+// Rune interface
+#[derive(rune::Any)]
+#[repr(transparent)]
+struct RuneCoreAPIType(*const CoreAPIType);
+
+impl RuneCoreAPIType {
+    fn get_value(&self) -> i32 {
+        assert!(!self.0.is_null());
+        // SAFETY: it is not NULL
+        unsafe { (*self.0).get_value() }
+    }
+}
+
 struct RuneCallback {}
 
 fn api_function_with_callback<C: SquareValue>(api: &CoreAPIType, callback: &C) {
@@ -56,24 +69,34 @@ fn work() {
     "###;
 
     // This doesn't seem to be the mechanism
-    // to get a string literal into something
+    // to get a string lieral into something
     // we can call via rust
     let mut sources = rune::sources! {
         entry => {
-        pub fn callback_body(value) {
-            value * value
-        }
+            pub fn callback_body(item) {
+              item.get_value * item.get_value
+            }
         }
     };
 
-    let context = rune::Context::new();
+    let mut context = rune::Context::new();
+    let mut m = rune::Module::new();
+    m.field_fn(
+        rune::runtime::Protocol::GET,
+        "get_value",
+        RuneCoreAPIType::get_value,
+    )
+    .unwrap();
+    m.ty::<RuneCoreAPIType>().unwrap();
+    context.install(&m).unwrap();
     let result = rune::prepare(&mut sources).with_context(&context).build();
 
     let unit = result.unwrap();
 
     let mut vm = rune::Vm::new(Arc::new(context.runtime()), Arc::new(unit));
+    let wrapper = RuneCoreAPIType(&api as *const CoreAPIType);
     let output = vm
-        .execute(["callback_body"], (api.get_value(),))
+        .execute(["callback_body"], (wrapper,))
         .unwrap()
         .complete()
         .unwrap();
