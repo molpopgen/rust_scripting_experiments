@@ -1,5 +1,9 @@
 use crate::CoreAPIType;
 
+// LightUserData is itself a transparent
+// newtype around *mut c_void, so this
+// LuaCoreAPIType is just a pointer at the
+// ABI level.
 #[repr(transparent)]
 pub struct LuaCoreAPIType(mlua::LightUserData);
 
