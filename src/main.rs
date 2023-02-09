@@ -5,9 +5,8 @@ struct RustCallBack {}
 
 // Stuff to move into a lua_api module of the back-end lib
 
-struct LuaWrapper {
-    data: mlua::LightUserData,
-}
+#[repr(transparent)]
+struct LuaWrapper(mlua::LightUserData);
 
 impl LuaWrapper {
     // Again, a lot not to like here,
@@ -19,19 +18,17 @@ impl LuaWrapper {
     pub fn new(api: &CoreAPIType) -> Self {
         let ptr: *const std::ffi::c_void = api as *const _ as *const std::ffi::c_void;
         let ptr: *mut std::ffi::c_void = ptr as _;
-        Self {
-            data: mlua::LightUserData(ptr),
-        }
+        Self(mlua::LightUserData(ptr))
     }
 }
 
 impl mlua::UserData for LuaWrapper {
     fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("get_value", |_, wrapper, ()| {
-            assert!(!wrapper.data.0.is_null());
+            assert!(!wrapper.0 .0.is_null());
             // Wow, there's a lot not to like there
             // SAFETY: it ain't null
-            let value = unsafe { (*(wrapper.data.0 as *const CoreAPIType)).get_value() };
+            let value = unsafe { (*(wrapper.0 .0 as *const CoreAPIType)).get_value() };
             Ok(value)
         });
     }
@@ -135,4 +132,15 @@ fn main() {
 #[test]
 fn test_things() {
     work();
+}
+
+// FIXME: this isn't necessary to test.
+#[test]
+fn test_sizeof_lua_wrapper() {
+    // Make sure the compiler is optimizing our wrapper of a wrapper of
+    // a pointer properly.
+    assert_eq!(
+        std::mem::size_of::<LuaWrapper>(),
+        std::mem::size_of::<usize>()
+    );
 }
