@@ -89,6 +89,13 @@ fn work() {
         .eval::<i32>()
         .unwrap();
     assert_eq!(result, api.get_value() * api.get_value());
+
+    // removing data from globals
+    //globals.set("data_from_rust", mlua::Value::Nil).unwrap();
+    //let result = lua
+    //    .load("callback_body(data_from_rust)")
+    //    .eval::<i32>()
+    //    .unwrap();
 }
 
 fn main() {
