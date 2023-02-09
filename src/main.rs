@@ -3,6 +3,40 @@ use std::sync::Arc;
 
 struct RustCallBack {}
 
+// Stuff to move into a lua_api module of the back-end lib
+
+struct LuaWrapper {
+    data: mlua::LightUserData,
+}
+
+impl LuaWrapper {
+    // Again, a lot not to like here,
+    // but at least we can pass in a const
+    // ref to a rust API type.
+    // The down side is we have to promise
+    // that we never break this contract,
+    // so we are basically just writing C.
+    pub fn new(api: &CoreAPIType) -> Self {
+        let ptr: *const std::ffi::c_void = api as *const _ as *const std::ffi::c_void;
+        let ptr: *mut std::ffi::c_void = ptr as _;
+        Self {
+            data: mlua::LightUserData(ptr),
+        }
+    }
+}
+
+impl mlua::UserData for LuaWrapper {
+    fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method("get_value", |_, wrapper, ()| {
+            assert!(!wrapper.data.0.is_null());
+            // Wow, there's a lot not to like there
+            // SAFETY: it ain't null
+            let value = unsafe { (*(wrapper.data.0 as *const CoreAPIType)).get_value() };
+            Ok(value)
+        });
+    }
+}
+
 impl SquareValue for RustCallBack {
     unsafe fn square(&self, api: *const CoreAPIType) -> i32 {
         assert!(!api.is_null());
@@ -61,6 +95,36 @@ fn work() {
         .complete()
         .unwrap();
     let result: i32 = rune::FromValue::from_value(output).unwrap();
+    assert_eq!(result, api.get_value() * api.get_value());
+
+    // Now, lua!
+    let lua = mlua::Lua::new();
+
+    let lua_callback = r###"
+        function callback_body(item)
+            print("lua got ", item:get_value());
+            return item:get_value() * item:get_value()
+        end
+        "###;
+
+    let globals = lua.globals();
+
+    // Unclear if this is correct
+    lua.load(lua_callback).exec().unwrap();
+
+    globals
+        .set(
+            "data_from_rust",
+            lua.create_userdata(LuaWrapper::new(&api)).unwrap(),
+        )
+        .unwrap();
+
+    lua.create_table().unwrap();
+
+    let result = lua
+        .load("callback_body(data_from_rust)")
+        .eval::<i32>()
+        .unwrap();
     assert_eq!(result, api.get_value() * api.get_value());
 }
 
