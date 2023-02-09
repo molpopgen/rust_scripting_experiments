@@ -1,38 +1,9 @@
-use corelib::{CoreAPIType, RuneCoreAPIType, SquareValue};
+use corelib::{CoreAPIType, LuaCoreAPIType, RuneCoreAPIType, SquareValue};
 use std::sync::Arc;
 
 struct RustCallBack {}
 
 // Stuff to move into a lua_api module of the back-end lib
-
-#[repr(transparent)]
-struct LuaWrapper(mlua::LightUserData);
-
-impl LuaWrapper {
-    // Again, a lot not to like here,
-    // but at least we can pass in a const
-    // ref to a rust API type.
-    // The down side is we have to promise
-    // that we never break this contract,
-    // so we are basically just writing C.
-    pub fn new(api: &CoreAPIType) -> Self {
-        let ptr: *const std::ffi::c_void = api as *const _ as *const std::ffi::c_void;
-        let ptr: *mut std::ffi::c_void = ptr as _;
-        Self(mlua::LightUserData(ptr))
-    }
-}
-
-impl mlua::UserData for LuaWrapper {
-    fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_method("get_value", |_, wrapper, ()| {
-            assert!(!wrapper.0 .0.is_null());
-            // Wow, there's a lot not to like there
-            // SAFETY: it ain't null
-            let value = unsafe { (*(wrapper.0 .0 as *const CoreAPIType)).get_value() };
-            Ok(value)
-        });
-    }
-}
 
 impl SquareValue for RustCallBack {
     unsafe fn square(&self, api: *const CoreAPIType) -> i32 {
@@ -112,7 +83,7 @@ fn work() {
     globals
         .set(
             "data_from_rust",
-            lua.create_userdata(LuaWrapper::new(&api)).unwrap(),
+            lua.create_userdata(LuaCoreAPIType::new(&api)).unwrap(),
         )
         .unwrap();
 
@@ -140,7 +111,7 @@ fn test_sizeof_lua_wrapper() {
     // Make sure the compiler is optimizing our wrapper of a wrapper of
     // a pointer properly.
     assert_eq!(
-        std::mem::size_of::<LuaWrapper>(),
+        std::mem::size_of::<LuaCoreAPIType>(),
         std::mem::size_of::<usize>()
     );
 }

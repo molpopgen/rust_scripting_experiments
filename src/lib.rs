@@ -24,5 +24,7 @@ pub trait SquareValue {
 }
 
 mod rune_api;
+mod lua_api;
 
 pub use rune_api::RuneCoreAPIType;
+pub use lua_api::LuaCoreAPIType;
