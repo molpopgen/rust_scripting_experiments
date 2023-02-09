@@ -1,6 +1,7 @@
 use crate::CoreAPIType;
 
 #[derive(rune::Any)]
+#[repr(transparent)]
 pub struct RuneCoreAPIType(*const CoreAPIType);
 
 impl RuneCoreAPIType {
